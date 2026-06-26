@@ -6,6 +6,7 @@ export default function KanbanBoard({ board, onCardMove, onCardCreate, onCardUpd
   const [quickAddColId, setQuickAddColId] = useState(null);
   const [newTitle, setNewTitle] = useState('');
   const [newDesc, setNewDesc] = useState('');
+  const [newComplexity, setNewComplexity] = useState(0);
 
   // Handle Drag Over column
   const handleDragOver = (e) => {
@@ -24,25 +25,15 @@ export default function KanbanBoard({ board, onCardMove, onCardCreate, onCardUpd
     e.currentTarget.classList.remove('column-drop-active');
 
     const cardId = e.dataTransfer.getData('text/plain');
-    const sourceColumnId = e.dataTransfer.getData('sourceColumnId');
-    const sourceOrder = parseInt(e.dataTransfer.getData('sourceOrder'), 10);
-
     if (!cardId) return;
-
-    // Default target index is the end of the column
-    const columnCards = board.cards.filter(c => c.columnId === targetColumnId);
-    const targetOrder = columnCards.length;
 
     onCardMove({
       cardId,
-      sourceColumnId,
-      sourceOrder,
-      targetColumnId,
-      targetOrder
+      targetColumnId
     });
   };
 
-  // Quick task submit handler
+  // Submit quick add task in column
   const handleQuickAddSubmit = (e, columnId) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
@@ -50,25 +41,25 @@ export default function KanbanBoard({ board, onCardMove, onCardCreate, onCardUpd
     onCardCreate({
       title: newTitle.trim(),
       description: newDesc.trim(),
-      columnId,
-      tags: [],
-      assignedTo: '',
-      dueDate: null
+      status: columnId, // maps to card status
+      labels: [],
+      assignee: '',
+      complexityScore: Number(newComplexity) || 0
     });
 
-    // Reset Form
+    // Reset state
     setNewTitle('');
     setNewDesc('');
+    setNewComplexity(0);
     setQuickAddColId(null);
   };
 
-  // Select header icons based on column ID
+  // Helper to map column header icons
   const getColumnIcon = (colId) => {
     switch (colId) {
-      case 'todo': return <ListTodo size={16} className="text-info" />;
-      case 'in-progress': return <Play size={16} className="text-warning animate-pulse" />;
-      case 'review': return <Eye size={16} className="text-purple" style={{ color: '#9b51e0' }} />;
-      case 'done': return <CheckCircle size={16} className="text-success" />;
+      case 'Todo': return <ListTodo size={16} className="text-info" />;
+      case 'In Progress': return <Play size={16} className="text-warning animate-pulse" />;
+      case 'Done': return <CheckCircle size={16} className="text-success" />;
       default: return <ListTodo size={16} />;
     }
   };
@@ -76,19 +67,20 @@ export default function KanbanBoard({ board, onCardMove, onCardCreate, onCardUpd
   return (
     <div className="row g-4 flex-nowrap overflow-x-auto pb-3" style={{ minHeight: '650px' }}>
       {board.columns.map((col) => {
-        // Filter and sort cards belonging to this column
+        // Filter cards matching col.id ('Todo', 'In Progress', 'Done')
+        // Sort by complexityScore (low to high) to keep ordering stable
         const columnCards = board.cards
-          .filter((card) => card.columnId === col.id)
-          .sort((a, b) => a.order - b.order);
+          .filter((card) => card.status === col.id)
+          .sort((a, b) => (a.complexityScore || 0) - (b.complexityScore || 0));
 
         return (
           <div 
             key={col.id} 
-            className="col-12 col-md-4 col-lg-3"
-            style={{ minWidth: '280px', maxWidth: '350px' }}
+            className="col-12 col-md-4 col-lg-4"
+            style={{ minWidth: '280px', maxWidth: '400px' }}
           >
             <div className="glass-panel p-3 h-100 d-flex flex-column">
-              {/* Column Title Header */}
+              {/* Column Header */}
               <div className="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-secondary border-opacity-25">
                 <div className="d-flex align-items-center gap-2">
                   {getColumnIcon(col.id)}
@@ -106,14 +98,14 @@ export default function KanbanBoard({ board, onCardMove, onCardCreate, onCardUpd
                 </button>
               </div>
 
-              {/* Column Drop Zone Container */}
+              {/* Column Drop Area */}
               <div 
                 className="column-drop-zone d-flex flex-column flex-grow-1"
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, col.id)}
               >
-                {/* Quick Add Form In-Line */}
+                {/* Inline Quick Add form */}
                 {quickAddColId === col.id && (
                   <form 
                     onSubmit={(e) => handleQuickAddSubmit(e, col.id)}
@@ -139,10 +131,20 @@ export default function KanbanBoard({ board, onCardMove, onCardCreate, onCardUpd
                         onChange={(e) => setNewDesc(e.target.value)}
                       ></textarea>
                     </div>
+                    <div className="mb-2">
+                      <label className="text-secondary small d-block mb-1" style={{ fontSize: '0.7rem' }}>Complexity Score</label>
+                      <input 
+                        type="number" 
+                        className="form-control form-control-sm"
+                        placeholder="Complexity (e.g. 5)"
+                        value={newComplexity}
+                        onChange={(e) => setNewComplexity(e.target.value)}
+                      />
+                    </div>
                     <div className="d-flex justify-content-end gap-2">
                       <button 
                         type="button" 
-                        className="btn btn-secondary btn-xs p-1 px-2 small text-x-small" 
+                        className="btn btn-secondary btn-xs p-1 px-2 small" 
                         style={{ fontSize: '0.75rem' }}
                         onClick={() => setQuickAddColId(null)}
                       >
@@ -150,7 +152,7 @@ export default function KanbanBoard({ board, onCardMove, onCardCreate, onCardUpd
                       </button>
                       <button 
                         type="submit" 
-                        className="btn btn-primary btn-xs p-1 px-2 small text-x-small" 
+                        className="btn btn-primary btn-xs p-1 px-2 small" 
                         style={{ fontSize: '0.75rem', background: 'linear-gradient(90deg, var(--neon-cyan) 0%, var(--neon-purple) 100%)', border: 'none' }}
                       >
                         Add Task
@@ -159,7 +161,7 @@ export default function KanbanBoard({ board, onCardMove, onCardCreate, onCardUpd
                   </form>
                 )}
 
-                {/* Cards List */}
+                {/* Cards rendering */}
                 <div className="cards-list d-flex flex-column flex-grow-1">
                   {columnCards.map((card) => (
                     <Card 

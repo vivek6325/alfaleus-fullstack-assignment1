@@ -37,7 +37,7 @@ app.use(cors({
 app.use(express.json());
 
 // Routes
-app.use('/api/boards', boardRoutes);
+app.use('/', boardRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

@@ -1,46 +1,41 @@
 import React, { useState } from 'react';
-import { Calendar, User, Tag, AlertTriangle, AlertOctagon, Info, Trash2, Edit } from 'lucide-react';
+import { User, Tag, Trash2, Edit, Award, Hash, Clock } from 'lucide-react';
 
 export default function Card({ card, boardId, onCardUpdate, onCardDelete }) {
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(card.title);
   const [description, setDescription] = useState(card.description);
-  const [assignedTo, setAssignedTo] = useState(card.assignedTo);
-  const [dueDate, setDueDate] = useState(card.dueDate ? card.dueDate.substring(0, 10) : '');
-  const [tags, setTags] = useState(card.tags ? card.tags.join(', ') : '');
+  const [assignee, setAssignee] = useState(card.assignee || '');
+  const [status, setStatus] = useState(card.status || 'Todo');
+  const [complexityScore, setComplexityScore] = useState(card.complexityScore || 0);
+  const [labels, setLabels] = useState(card.labels ? card.labels.join(', ') : '');
 
   // Form submit handler for editing card details
   const handleSubmit = (e) => {
     e.preventDefault();
     const updatedCard = {
       ...card,
-      title,
-      description,
-      assignedTo,
-      dueDate: dueDate || null,
-      tags: tags.split(',').map(tag => tag.trim()).filter(tag => tag !== '')
+      title: title.trim(),
+      description: description.trim(),
+      assignee: assignee.trim(),
+      status,
+      complexityScore: Number(complexityScore) || 0,
+      labels: labels.split(',').map(lbl => lbl.trim()).filter(lbl => lbl !== '')
     };
     onCardUpdate(updatedCard);
     setIsEditing(false);
   };
 
-  // Determine risk styles
-  const riskClass = 
-    card.aiRiskAnalysis?.status === 'critical' ? 'risk-critical' :
-    card.aiRiskAnalysis?.status === 'warning' ? 'risk-warning' :
-    'risk-normal';
-
-  const formatDueDate = (dateStr) => {
-    if (!dateStr) return null;
-    const date = new Date(dateStr);
-    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  const formatTime = (timeStr) => {
+    if (!timeStr) return null;
+    const date = new Date(timeStr);
+    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
   // HTML5 Drag Event Handlers
   const handleDragStart = (e) => {
     e.dataTransfer.setData('text/plain', card._id);
-    e.dataTransfer.setData('sourceColumnId', card.columnId);
-    e.dataTransfer.setData('sourceOrder', card.order);
+    e.dataTransfer.setData('sourceColumnId', card.status);
     e.currentTarget.classList.add('dragging');
   };
 
@@ -51,7 +46,7 @@ export default function Card({ card, boardId, onCardUpdate, onCardDelete }) {
   return (
     <>
       <div 
-        className={`glass-card p-3 mb-3 d-flex flex-column gap-2 ${riskClass}`}
+        className="glass-card p-3 mb-3 d-flex flex-column gap-2 risk-normal"
         draggable
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
@@ -62,7 +57,16 @@ export default function Card({ card, boardId, onCardUpdate, onCardDelete }) {
           <div className="d-flex gap-1">
             <button 
               className="btn btn-link p-0 text-secondary hover-text-white" 
-              onClick={() => setIsEditing(true)}
+              onClick={() => {
+                // Refresh local edit state
+                setTitle(card.title);
+                setDescription(card.description);
+                setAssignee(card.assignee || '');
+                setStatus(card.status || 'Todo');
+                setComplexityScore(card.complexityScore || 0);
+                setLabels(card.labels ? card.labels.join(', ') : '');
+                setIsEditing(true);
+              }}
               title="Edit Task"
             >
               <Edit size={14} />
@@ -83,11 +87,11 @@ export default function Card({ card, boardId, onCardUpdate, onCardDelete }) {
           </p>
         )}
 
-        {/* Display Tags */}
-        {card.tags && card.tags.length > 0 && (
+        {/* Display Labels */}
+        {card.labels && card.labels.length > 0 && (
           <div className="d-flex flex-wrap mt-1">
-            {card.tags.map((tag, i) => (
-              <span key={i} className="badge-tag">{tag}</span>
+            {card.labels.map((lbl, i) => (
+              <span key={i} className="badge-tag">{lbl}</span>
             ))}
           </div>
         )}
@@ -95,25 +99,20 @@ export default function Card({ card, boardId, onCardUpdate, onCardDelete }) {
         <div className="d-flex justify-content-between align-items-center mt-2 pt-2 border-top border-secondary border-opacity-25 text-secondary small">
           <div className="d-flex align-items-center gap-1">
             <User size={12} />
-            <span>{card.assignedTo || 'Unassigned'}</span>
+            <span>{card.assignee || 'Unassigned'}</span>
           </div>
-          {card.dueDate && (
-            <div className="d-flex align-items-center gap-1">
-              <Calendar size={12} />
-              <span>{formatDueDate(card.dueDate)}</span>
+          {card.complexityScore !== undefined && (
+            <div className="d-flex align-items-center gap-1" title={`Complexity: ${card.complexityScore}`}>
+              <Award size={12} className="text-info" />
+              <span>SP: {card.complexityScore}</span>
             </div>
           )}
         </div>
 
-        {/* AI Insight banner inside card */}
-        {card.aiRiskAnalysis?.status !== 'normal' && (
-          <div className="mt-2 p-2 rounded small bg-dark bg-opacity-50 text-warning border-start border-warning border-3 d-flex gap-1 align-items-center">
-            {card.aiRiskAnalysis?.status === 'critical' ? (
-              <AlertOctagon size={12} className="text-danger flex-shrink-0" />
-            ) : (
-              <AlertTriangle size={12} className="text-warning flex-shrink-0" />
-            )}
-            <span className="x-small" style={{ fontSize: '0.75rem' }}>{card.aiRiskAnalysis.message}</span>
+        {/* Show active card version */}
+        {card.version > 1 && (
+          <div className="d-flex justify-content-end text-muted small mt-1" style={{ fontSize: '0.65rem' }}>
+            <span>v{card.version}</span>
           </div>
         )}
       </div>
@@ -124,7 +123,7 @@ export default function Card({ card, boardId, onCardUpdate, onCardDelete }) {
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title text-white">Edit Task</h5>
+                <h5 className="modal-title text-white">Edit Task Details</h5>
                 <button type="button" className="btn-close btn-close-white" onClick={() => setIsEditing(false)} aria-label="Close"></button>
               </div>
               <form onSubmit={handleSubmit}>
@@ -154,40 +153,58 @@ export default function Card({ card, boardId, onCardUpdate, onCardDelete }) {
                       <input 
                         type="text" 
                         className="form-control" 
-                        value={assignedTo} 
-                        onChange={(e) => setAssignedTo(e.target.value)} 
+                        value={assignee} 
+                        onChange={(e) => setAssignee(e.target.value)} 
                       />
                     </div>
                     <div className="col-md-6">
-                      <label className="form-label text-secondary small">Due Date</label>
+                      <label className="form-label text-secondary small">Status (Column)</label>
+                      <select 
+                        className="form-select" 
+                        value={status} 
+                        onChange={(e) => setStatus(e.target.value)}
+                      >
+                        <option value="Todo">To Do</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Done">Done</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="row g-2">
+                    <div className="col-md-6">
+                      <label className="form-label text-secondary small">Complexity Score (Story Points)</label>
                       <input 
-                        type="date" 
+                        type="number" 
                         className="form-control" 
-                        value={dueDate} 
-                        onChange={(e) => setDueDate(e.target.value)} 
+                        value={complexityScore} 
+                        onChange={(e) => setComplexityScore(e.target.value)} 
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label text-secondary small">Labels (Comma-separated)</label>
+                      <input 
+                        type="text" 
+                        className="form-control" 
+                        placeholder="e.g. backend, database"
+                        value={labels} 
+                        onChange={(e) => setLabels(e.target.value)} 
                       />
                     </div>
                   </div>
-                  <div>
-                    <label className="form-label text-secondary small">Tags (Comma-separated)</label>
-                    <input 
-                      type="text" 
-                      className="form-control" 
-                      placeholder="e.g. frontend, high-priority, bug"
-                      value={tags} 
-                      onChange={(e) => setTags(e.target.value)} 
-                    />
-                  </div>
 
-                  {card.aiRiskAnalysis?.status !== 'normal' && (
-                    <div className={`p-3 rounded small bg-opacity-10 border d-flex gap-2 align-items-start ${card.aiRiskAnalysis?.status === 'critical' ? 'bg-danger border-danger text-danger' : 'bg-warning border-warning text-warning'}`}>
-                      <Info size={16} className="mt-0.5 flex-shrink-0" />
-                      <div>
-                        <span className="fw-semibold">AI Risk Diagnosis: </span>
-                        <span>{card.aiRiskAnalysis?.message}</span>
-                      </div>
+                  {/* Document metadata display */}
+                  <div className="mt-2 pt-3 border-top border-secondary border-opacity-25 d-flex justify-content-between text-secondary" style={{ fontSize: '0.75rem' }}>
+                    <div className="d-flex align-items-center gap-1">
+                      <Hash size={12} />
+                      <span>Document Version: {card.version || 1}</span>
                     </div>
-                  )}
+                    {card.updatedAt && (
+                      <div className="d-flex align-items-center gap-1">
+                        <Clock size={12} />
+                        <span>Last Updated: {formatTime(card.updatedAt)}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="modal-footer">
                   <button type="button" className="btn btn-secondary btn-sm" onClick={() => setIsEditing(false)}>Cancel</button>

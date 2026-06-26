@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // 2. Fetch Board Workspaces from Backend API
-  fetch(`${BACKEND_URL}/api/boards`)
+  fetch(`${BACKEND_URL}/boards`)
     .then(res => {
       if (!res.ok) throw new Error('API server returned error status');
       return res.json();
@@ -71,10 +71,10 @@ document.addEventListener('DOMContentLoaded', () => {
     e.preventDefault();
 
     const selectedBoardId = boardSelect.value;
-    const columnId = document.getElementById('column-select').value;
+    const status = document.getElementById('column-select').value;
     const title = document.getElementById('task-title').value;
     const description = document.getElementById('task-desc').value;
-    const assignedTo = document.getElementById('task-assignee').value;
+    const assignee = document.getElementById('task-assignee').value;
 
     if (!selectedBoardId) {
       showFeedback('Please select a valid board.', 'error');
@@ -84,8 +84,8 @@ document.addEventListener('DOMContentLoaded', () => {
     submitBtn.disabled = true;
     submitBtn.textContent = 'Clipping...';
 
-    // POST request to backend
-    fetch(`${BACKEND_URL}/api/boards/${selectedBoardId}/cards`, {
+    // POST request to backend /cards
+    fetch(`${BACKEND_URL}/cards`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -93,9 +93,11 @@ document.addEventListener('DOMContentLoaded', () => {
       body: JSON.stringify({
         title,
         description,
-        columnId,
-        assignedTo,
-        tags: ['clipped']
+        status, // 'Todo', 'In Progress', or 'Done'
+        assignee,
+        boardId: selectedBoardId,
+        labels: ['clipped'],
+        complexityScore: 1
       })
     })
     .then(res => {
@@ -109,15 +111,11 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('task-title').value = '';
       document.getElementById('task-desc').value = '';
       
-      // Load Socket.IO client script if available locally, or try connecting to send sync broadcast
-      // Since Socket.IO uses standard HTTP polling, a quick WebSocket handshake works
+      // Attempt Socket Sync if Socket.IO script is loaded
       if (typeof io !== 'undefined') {
         const socket = io(BACKEND_URL);
         socket.emit('notify-board-change', selectedBoardId);
         setTimeout(() => socket.disconnect(), 1000);
-      } else {
-        // We can make a lightweight fetch to trigger socket broadast or let web clients sync
-        // Handled by client reload or concurrent WebSocket updates
       }
     })
     .catch(err => {

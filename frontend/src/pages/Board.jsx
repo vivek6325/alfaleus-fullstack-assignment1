@@ -16,105 +16,107 @@ export default function Board({ boardId }) {
   
   const socketRef = useRef(null);
 
-  // 1. Fetch Board Details
+  // 1. Fetch Board Metadata and Associated Cards
   const fetchBoard = async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const res = await axios.get(`${BACKEND_URL}/api/boards/${boardId}`);
-      setBoard(res.data);
+      // Get board metadata from all boards list
+      const boardsRes = await axios.get(`${BACKEND_URL}/boards`);
+      const activeBoard = boardsRes.data.find(b => b._id === boardId);
+
+      if (!activeBoard) {
+        setError('Board not found.');
+        return;
+      }
+
+      // Fetch separate Card documents associated with this board
+      const cardsRes = await axios.get(`${BACKEND_URL}/cards?boardId=${boardId}`);
+
+      // Synthesize board state for columns
+      setBoard({
+        _id: activeBoard._id,
+        name: activeBoard.name,
+        sprintEndDate: activeBoard.sprintEndDate,
+        columns: [
+          { id: 'Todo', title: 'To Do' },
+          { id: 'In Progress', title: 'In Progress' },
+          { id: 'Done', title: 'Done' }
+        ],
+        cards: cardsRes.data
+      });
       setError(null);
     } catch (err) {
-      console.error('Error fetching board:', err);
-      setError('Could not connect to board server. Please make sure the backend is running.');
+      console.error('Error fetching board data:', err);
+      setError('Could not connect to board server. Please ensure the backend is running.');
     } finally {
       if (!silent) setLoading(false);
     }
   };
 
-  // 2. Establish Real-Time Socket Connections
+  // 2. Manage WebSocket Sync Connection
   useEffect(() => {
     fetchBoard();
 
-    // Connect to WebSocket Server
+    // Bind WebSocket
     const socket = io(BACKEND_URL, {
       transports: ['websocket', 'polling']
     });
     socketRef.current = socket;
 
     socket.on('connect', () => {
-      console.log('Socket.IO connected to backend');
       setSocketConnected(true);
       socket.emit('join-board', boardId);
     });
 
     socket.on('disconnect', () => {
-      console.log('Socket.IO disconnected from backend');
       setSocketConnected(false);
     });
 
-    // Real-time synchronization event listeners
-    socket.on('board-updated', (updatedBoard) => {
-      setBoard(updatedBoard);
-    });
-
     socket.on('refresh-board', () => {
-      fetchBoard(true); // silent update in background
+      fetchBoard(true); // silent fetch in background
     });
 
-    // Cleanup on unmount or boardId change
     return () => {
       socket.off('connect');
       socket.off('disconnect');
-      socket.off('board-updated');
       socket.off('refresh-board');
       socket.disconnect();
     };
   }, [boardId]);
 
-  // 3. Move Card Handler (Optimistic state update + Socket emit)
-  const handleCardMove = ({ cardId, sourceColumnId, sourceOrder, targetColumnId, targetOrder }) => {
+  // 3. Move Card handler (Optimistic local drag transition + Socket emit)
+  const handleCardMove = ({ cardId, targetColumnId }) => {
     if (!board) return;
 
-    // Optimistic local UI transition
-    const updatedCards = [...board.cards];
-    const movingCard = updatedCards.find(c => c._id === cardId);
-    if (!movingCard) return;
-
-    // Temporarily reassign columns local-side
-    movingCard.columnId = targetColumnId;
-
-    // Filter and update local orders for immediate client-side visual satisfaction
-    const targetCards = updatedCards.filter(c => c.columnId === targetColumnId && c._id !== cardId);
-    targetCards.sort((a, b) => a.order - b.order);
-    targetCards.splice(targetOrder, 0, movingCard);
-    targetCards.forEach((c, idx) => { c.order = idx; });
-
-    if (sourceColumnId !== targetColumnId) {
-      const sourceCards = updatedCards.filter(c => c.columnId === sourceColumnId && c._id !== cardId);
-      sourceCards.sort((a, b) => a.order - b.order);
-      sourceCards.forEach((c, idx) => { c.order = idx; });
-    }
-
+    // Optimistic UI update
+    const updatedCards = board.cards.map(c => {
+      if (c._id === cardId) {
+        return { ...c, status: targetColumnId };
+      }
+      return c;
+    });
     setBoard({ ...board, cards: updatedCards });
 
-    // Emit real-time drag-and-drop to socket
+    // Emit drag move to WebSocket
     if (socketRef.current) {
       socketRef.current.emit('move-card', {
         boardId,
         cardId,
-        sourceColumnId,
-        sourceOrder,
-        targetColumnId,
-        targetOrder
+        targetColumnId
       });
     }
   };
 
-  // 4. Create Card Handler
+  // 4. Create Card handler
   const handleCardCreate = async (newCardData) => {
     try {
-      const res = await axios.post(`${BACKEND_URL}/api/boards/${boardId}/cards`, newCardData);
-      setBoard(res.data);
+      const payload = {
+        ...newCardData,
+        boardId
+      };
+      await axios.post(`${BACKEND_URL}/cards`, payload);
+      // Fetch latest list and emit websocket refresh
+      await fetchBoard(true);
       if (socketRef.current) {
         socketRef.current.emit('notify-board-change', boardId);
       }
@@ -123,11 +125,11 @@ export default function Board({ boardId }) {
     }
   };
 
-  // 5. Update Card Handler
+  // 5. Update Card details handler
   const handleCardUpdate = async (updatedCard) => {
     try {
-      const res = await axios.put(`${BACKEND_URL}/api/boards/${boardId}/cards/${updatedCard._id}`, updatedCard);
-      setBoard(res.data);
+      await axios.put(`${BACKEND_URL}/cards/${updatedCard._id}`, updatedCard);
+      await fetchBoard(true);
       if (socketRef.current) {
         socketRef.current.emit('notify-board-change', boardId);
       }
@@ -136,12 +138,12 @@ export default function Board({ boardId }) {
     }
   };
 
-  // 6. Delete Card Handler
+  // 6. Delete Card handler
   const handleCardDelete = async (cardId) => {
     if (!window.confirm('Are you sure you want to delete this task?')) return;
     try {
-      const res = await axios.delete(`${BACKEND_URL}/api/boards/${boardId}/cards/${cardId}`);
-      setBoard(res.data);
+      await axios.delete(`${BACKEND_URL}/cards/${cardId}`);
+      await fetchBoard(true);
       if (socketRef.current) {
         socketRef.current.emit('notify-board-change', boardId);
       }
@@ -156,7 +158,7 @@ export default function Board({ boardId }) {
         <div className="spinner-border text-info mb-3" role="status">
           <span className="visually-hidden">Loading...</span>
         </div>
-        <p className="text-secondary">Retrieving collaborative canvas...</p>
+        <p className="text-secondary">Retrieving board canvas...</p>
       </div>
     );
   }
@@ -178,21 +180,24 @@ export default function Board({ boardId }) {
 
   return (
     <div className="container-fluid px-md-5 py-4">
-      {/* Board Header details */}
+      {/* Board Header */}
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
           <h1 className="h2 text-white fw-bold mb-1">{board.name}</h1>
-          <p className="text-secondary small mb-0">{board.description}</p>
+          {board.sprintEndDate && (
+            <p className="text-secondary small mb-0">
+              Sprint End Date: {new Date(board.sprintEndDate).toLocaleDateString()}
+            </p>
+          )}
         </div>
 
         <div className="d-flex flex-wrap gap-2 align-items-center">
-          {/* Socket Connection Badge */}
           <div className={`badge d-flex align-items-center gap-1.5 px-3 py-2 fs-7 border rounded-pill ${
             socketConnected ? 'bg-success bg-opacity-10 text-success border-success border-opacity-25' : 
             'bg-warning bg-opacity-10 text-warning border-warning border-opacity-25'
           }`}>
             <Activity size={12} className={socketConnected ? 'animate-pulse' : ''} />
-            <span>{socketConnected ? 'Real-Time Connected' : 'Offline (Syncing...)'}</span>
+            <span>{socketConnected ? 'Real-Time Sync active' : 'Connecting Sync...'}</span>
           </div>
 
           <button 
@@ -213,7 +218,7 @@ export default function Board({ boardId }) {
       {/* AI Insights Segment */}
       {showAIInsights && <AIInsights board={board} />}
 
-      {/* Main Board columns */}
+      {/* Main Board Layout */}
       <KanbanBoard 
         board={board}
         onCardMove={handleCardMove}
