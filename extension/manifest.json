@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "Syncpad Clipper",
+  "version": "1.0.0",
+  "description": "Clip pages, highlights, and links directly to your collaborative Kanban Board.",
+  "permissions": [
+    "activeTab"
+  ],
+  "host_permissions": [
+    "http://localhost:5000/*"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}
