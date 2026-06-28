@@ -27,6 +27,7 @@ export default function Card({ card, boardId, onCardUpdate, onCardDelete }) {
   const [status, setStatus] = useState(card.status || 'Todo');
   const [complexityScore, setComplexityScore] = useState(card.complexityScore || 0);
   const [labels, setLabels] = useState(card.labels ? card.labels.join(', ') : '');
+  const [milestone, setMilestone] = useState(card.milestone || '');
 
   // Form submit handler for editing card details
   const handleSubmit = (e) => {
@@ -38,7 +39,8 @@ export default function Card({ card, boardId, onCardUpdate, onCardDelete }) {
       assignee: assignee.trim(),
       status,
       complexityScore: Number(complexityScore) || 0,
-      labels: labels.split(',').map(lbl => lbl.trim()).filter(lbl => lbl !== '')
+      labels: labels.split(',').map(lbl => lbl.trim()).filter(lbl => lbl !== ''),
+      milestone: milestone.trim()
     };
     onCardUpdate(updatedCard);
     setIsEditing(false);
@@ -72,6 +74,7 @@ export default function Card({ card, boardId, onCardUpdate, onCardDelete }) {
                 setStatus(card.status || 'Todo');
                 setComplexityScore(card.complexityScore || 0);
                 setLabels(card.labels ? card.labels.join(', ') : '');
+                setMilestone(card.milestone || '');
                 setIsEditing(true);
               }}
               title="Edit Task"
@@ -94,11 +97,16 @@ export default function Card({ card, boardId, onCardUpdate, onCardDelete }) {
           </p>
         )}
 
-        {/* Display Labels */}
-        {card.labels && card.labels.length > 0 && (
-          <div className="d-flex flex-wrap mt-1">
-            {card.labels.map((lbl, i) => (
-              <span key={i} className="badge-tag">{lbl}</span>
+        {/* Display Milestone & Labels */}
+        {(card.milestone || (card.labels && card.labels.length > 0)) && (
+          <div className="d-flex flex-wrap mt-1 gap-1 align-items-center">
+            {card.milestone && (
+              <span className="badge bg-info bg-opacity-10 text-info border border-info border-opacity-10 rounded-pill font-monospace" style={{ fontSize: '0.65rem', padding: '3px 8px', marginRight: '4px' }}>
+                Milestone: {card.milestone}
+              </span>
+            )}
+            {card.labels && card.labels.map((lbl, i) => (
+              <span key={i} className="badge-tag m-0">{lbl}</span>
             ))}
           </div>
         )}
@@ -197,6 +205,16 @@ export default function Card({ card, boardId, onCardUpdate, onCardDelete }) {
                         onChange={(e) => setLabels(e.target.value)} 
                       />
                     </div>
+                  </div>
+                  <div>
+                    <label className="form-label text-secondary small">Milestone</label>
+                    <input 
+                      type="text" 
+                      className="form-control" 
+                      placeholder="e.g. Sprint 1 Release"
+                      value={milestone} 
+                      onChange={(e) => setMilestone(e.target.value)} 
+                    />
                   </div>
 
                   {/* Document metadata display */}

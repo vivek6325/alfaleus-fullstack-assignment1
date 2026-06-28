@@ -4,7 +4,8 @@ import { io } from 'socket.io-client';
 import KanbanBoard from '../components/KanbanBoard.jsx';
 import AIInsights from '../components/AIInsights.jsx';
 import AIInsightsSidebar from '../components/AIInsightsSidebar.jsx';
-import { Share2, RefreshCw, Cpu, Activity, AlertCircle } from 'lucide-react';
+import GitHubImporterModal from '../components/GitHubImporterModal.jsx';
+import { Share2, RefreshCw, Cpu, Activity, AlertCircle, Github } from 'lucide-react';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
@@ -17,6 +18,7 @@ export default function Board({ boardId }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [aiProgress, setAiProgress] = useState(null);
   const [aiInsights, setAiInsights] = useState(null);
+  const [isGitHubModalOpen, setIsGitHubModalOpen] = useState(false);
   
   const socketRef = useRef(null);
 
@@ -266,6 +268,14 @@ export default function Board({ boardId }) {
           </div>
 
           <button 
+            className="btn btn-sm btn-outline-secondary text-white d-flex align-items-center gap-2 border border-secondary border-opacity-25"
+            onClick={() => setIsGitHubModalOpen(true)}
+          >
+            <Github size={14} />
+            <span>Import Issues</span>
+          </button>
+
+          <button 
             className={`btn btn-sm d-flex align-items-center gap-2 border border-secondary border-opacity-25 ${isSidebarOpen ? 'btn-info text-dark' : 'btn-outline-secondary text-white'}`}
             onClick={() => setIsSidebarOpen(true)}
           >
@@ -298,6 +308,13 @@ export default function Board({ boardId }) {
         boardId={boardId}
         socket={socketRef.current}
         initialInsights={aiInsights}
+      />
+
+      <GitHubImporterModal 
+        isOpen={isGitHubModalOpen}
+        onClose={() => setIsGitHubModalOpen(false)}
+        boardId={boardId}
+        onImportSuccess={() => fetchBoard(true)}
       />
     </div>
   );

@@ -29,6 +29,15 @@ const CardSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  githubIssueId: {
+    type: Number,
+    default: null
+  },
+  milestone: {
+    type: String,
+    default: '',
+    trim: true
+  },
   boardId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Board',
