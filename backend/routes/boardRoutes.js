@@ -1,6 +1,7 @@
 import express from 'express';
 import Board from '../models/Board.js';
 import Card from '../models/Card.js';
+import { runAIAnalysis } from '../services/aiProjectManager.js';
 
 const router = express.Router();
 
@@ -161,6 +162,17 @@ router.delete('/cards/:id', async (req, res) => {
     res.json({ message: 'Card deleted successfully', cardId: req.params.id });
   } catch (error) {
     res.status(500).json({ message: 'Error deleting card', error: error.message });
+  }
+});
+
+// POST /boards/:id/ai-analyse
+router.post('/boards/:id/ai-analyse', async (req, res) => {
+  try {
+    const io = req.app.get('io');
+    const insights = await runAIAnalysis(req.params.id, io);
+    res.json(insights);
+  } catch (error) {
+    res.status(500).json({ message: 'Error running AI analysis', error: error.message });
   }
 });
 

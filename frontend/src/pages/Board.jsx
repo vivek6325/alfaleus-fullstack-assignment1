@@ -3,6 +3,7 @@ import axios from 'axios';
 import { io } from 'socket.io-client';
 import KanbanBoard from '../components/KanbanBoard.jsx';
 import AIInsights from '../components/AIInsights.jsx';
+import AIInsightsSidebar from '../components/AIInsightsSidebar.jsx';
 import { Share2, RefreshCw, Cpu, Activity, AlertCircle } from 'lucide-react';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
@@ -13,6 +14,9 @@ export default function Board({ boardId }) {
   const [error, setError] = useState(null);
   const [socketConnected, setSocketConnected] = useState(false);
   const [showAIInsights, setShowAIInsights] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [aiProgress, setAiProgress] = useState(null);
+  const [aiInsights, setAiInsights] = useState(null);
   
   const socketRef = useRef(null);
 
@@ -123,6 +127,15 @@ export default function Board({ boardId }) {
       }
     });
 
+    socket.on('ai-progress', (data) => {
+      setAiProgress(data);
+    });
+
+    socket.on('ai-insights', (data) => {
+      setAiInsights(data);
+      setAiProgress(null);
+    });
+
     return () => {
       socket.off('connect');
       socket.off('disconnect');
@@ -130,6 +143,8 @@ export default function Board({ boardId }) {
       socket.off('card_created');
       socket.off('card_updated');
       socket.off('card_deleted');
+      socket.off('ai-progress');
+      socket.off('ai-insights');
       socket.disconnect();
     };
   }, [boardId]);
@@ -251,8 +266,8 @@ export default function Board({ boardId }) {
           </div>
 
           <button 
-            className={`btn btn-sm d-flex align-items-center gap-2 border border-secondary border-opacity-25 ${showAIInsights ? 'btn-info text-dark' : 'btn-outline-secondary text-white'}`}
-            onClick={() => setShowAIInsights(!showAIInsights)}
+            className={`btn btn-sm d-flex align-items-center gap-2 border border-secondary border-opacity-25 ${isSidebarOpen ? 'btn-info text-dark' : 'btn-outline-secondary text-white'}`}
+            onClick={() => setIsSidebarOpen(true)}
           >
             <Cpu size={14} />
             <span>AI Assistant</span>
@@ -275,6 +290,14 @@ export default function Board({ boardId }) {
         onCardCreate={handleCardCreate}
         onCardUpdate={handleCardUpdate}
         onCardDelete={handleCardDelete}
+      />
+
+      <AIInsightsSidebar 
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        boardId={boardId}
+        socket={socketRef.current}
+        initialInsights={aiInsights}
       />
     </div>
   );

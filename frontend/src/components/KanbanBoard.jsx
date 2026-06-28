@@ -25,7 +25,7 @@ function BoardColumn({
   });
 
   return (
-    <div 
+    <div
       className="col-12 col-md-4 col-lg-4"
       style={{ minWidth: '280px', maxWidth: '400px' }}
     >
@@ -39,7 +39,7 @@ function BoardColumn({
               {columnCards.length}
             </span>
           </div>
-          <button 
+          <button
             className="btn btn-link p-0 text-secondary hover-text-white"
             onClick={() => setQuickAddColId(col.id)}
             title="Add Task"
@@ -49,19 +49,19 @@ function BoardColumn({
         </div>
 
         {/* Column Drop Area */}
-        <div 
+        <div
           ref={setNodeRef}
           className={`column-drop-zone d-flex flex-column flex-grow-1 ${isOver ? 'column-drop-active' : ''}`}
         >
           {/* Inline Quick Add form */}
           {quickAddColId === col.id && (
-            <form 
+            <form
               onSubmit={(e) => handleQuickAddSubmit(e, col.id)}
               className="p-3 mb-3 bg-dark bg-opacity-50 rounded border border-secondary border-opacity-25"
             >
               <div className="mb-2">
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   className="form-control form-control-sm"
                   placeholder="Task title..."
                   value={newTitle}
@@ -71,7 +71,7 @@ function BoardColumn({
                 />
               </div>
               <div className="mb-2">
-                <textarea 
+                <textarea
                   className="form-control form-control-sm"
                   placeholder="Task description..."
                   rows="2"
@@ -81,8 +81,8 @@ function BoardColumn({
               </div>
               <div className="mb-2">
                 <label className="text-secondary small d-block mb-1" style={{ fontSize: '0.7rem' }}>Complexity Score</label>
-                <input 
-                  type="number" 
+                <input
+                  type="number"
                   className="form-control form-control-sm"
                   placeholder="Complexity (e.g. 5)"
                   value={newComplexity}
@@ -90,17 +90,17 @@ function BoardColumn({
                 />
               </div>
               <div className="d-flex justify-content-end gap-2">
-                <button 
-                  type="button" 
-                  className="btn btn-secondary btn-xs p-1 px-2 small" 
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-xs p-1 px-2 small"
                   style={{ fontSize: '0.75rem' }}
                   onClick={() => setQuickAddColId(null)}
                 >
                   <X size={12} /> Cancel
                 </button>
-                <button 
-                  type="submit" 
-                  className="btn btn-primary btn-xs p-1 px-2 small" 
+                <button
+                  type="submit"
+                  className="btn btn-primary btn-xs p-1 px-2 small"
                   style={{ fontSize: '0.75rem', background: 'linear-gradient(90deg, var(--neon-cyan) 0%, var(--neon-purple) 100%)', border: 'none' }}
                 >
                   Add Task
@@ -112,7 +112,7 @@ function BoardColumn({
           {/* Cards rendering */}
           <div className="cards-list d-flex flex-column flex-grow-1">
             {columnCards.map((card) => (
-              <Card 
+              <Card
                 key={card._id}
                 card={card}
                 boardId={boardId}

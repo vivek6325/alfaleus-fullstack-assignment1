@@ -6,6 +6,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import boardRoutes from './routes/boardRoutes.js';
 import socketHandler from './socket/socketHandler.js';
+import Board from './models/Board.js';
+import { runAIAnalysis } from './services/aiProjectManager.js';
 
 dotenv.config();
 
@@ -84,6 +86,31 @@ async function startServer() {
 
   httpServer.listen(PORT, () => {
     console.log(`Kanban Backend Server running on port ${PORT}`);
+
+    // Setup automated AI analysis check every 6 hours + run once at startup after 5 seconds
+    setTimeout(async () => {
+      console.log('Running startup automated AI Project Manager analysis for all boards...');
+      try {
+        const boards = await Board.find();
+        for (const board of boards) {
+          await runAIAnalysis(board._id, io);
+        }
+      } catch (err) {
+        console.error('Error running startup automated AI analysis:', err);
+      }
+    }, 5000);
+
+    setInterval(async () => {
+      console.log('Running automated 6-hourly AI Project Manager analysis for all boards...');
+      try {
+        const boards = await Board.find();
+        for (const board of boards) {
+          await runAIAnalysis(board._id, io);
+        }
+      } catch (err) {
+        console.error('Error running automated AI analysis:', err);
+      }
+    }, 6 * 60 * 60 * 1000);
   });
 }
 

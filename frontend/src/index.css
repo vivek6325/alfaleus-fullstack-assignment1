@@ -158,3 +158,48 @@ body {
   margin-right: 4px;
   margin-bottom: 4px;
 }
+
+/* AI Project Manager Sidebar Layout */
+.ai-sidebar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 420px;
+  max-width: 90vw;
+  height: 100vh;
+  z-index: 1050;
+  background: rgba(10, 11, 20, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-left: 1px solid var(--card-border-glass);
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.6);
+  transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transform: translateX(100%);
+  display: flex;
+  flex-direction: column;
+}
+
+.ai-sidebar.open {
+  transform: translateX(0);
+}
+
+/* Spinner Rotate Animation */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Flashing critical risk badge styling */
+.risk-critical-badge {
+  box-shadow: 0 0 10px rgba(248, 87, 166, 0.4) !important;
+  border-color: rgba(248, 87, 166, 0.5) !important;
+  animation: pulse-critical-glow 2s infinite alternate;
+}
