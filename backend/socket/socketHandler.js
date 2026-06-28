@@ -21,10 +21,32 @@ export default function socketHandler(io) {
         
         await card.save();
 
+        // Broadcast card_updated event to all clients in the room
+        io.to(boardId).emit('card_updated', card);
+
         // Broadcast refresh event to all clients in the room to re-fetch the latest cards list
         io.to(boardId).emit('refresh-board');
       } catch (error) {
         console.error('Error handling move-card event:', error);
+      }
+    });
+
+    // Handle client-emitted card actions (to broadcast to others in the room)
+    socket.on('card_created', (card) => {
+      if (card && card.boardId) {
+        socket.broadcast.to(card.boardId.toString()).emit('card_created', card);
+      }
+    });
+
+    socket.on('card_updated', (card) => {
+      if (card && card.boardId) {
+        socket.broadcast.to(card.boardId.toString()).emit('card_updated', card);
+      }
+    });
+
+    socket.on('card_deleted', (data) => {
+      if (data && data.boardId) {
+        socket.broadcast.to(data.boardId.toString()).emit('card_deleted', data);
       }
     });
 

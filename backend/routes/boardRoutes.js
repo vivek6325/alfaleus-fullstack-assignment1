@@ -108,6 +108,10 @@ router.post('/cards', async (req, res) => {
     });
 
     await card.save();
+    const io = req.app.get('io');
+    if (io) {
+      io.to(boardId.toString()).emit('card_created', card);
+    }
     res.status(201).json(card);
   } catch (error) {
     res.status(400).json({ message: 'Error creating card', error: error.message });
@@ -133,6 +137,10 @@ router.put('/cards/:id', async (req, res) => {
     if (boardId !== undefined) card.boardId = boardId;
 
     await card.save();
+    const io = req.app.get('io');
+    if (io) {
+      io.to(card.boardId.toString()).emit('card_updated', card);
+    }
     res.json(card);
   } catch (error) {
     res.status(400).json({ message: 'Error updating card', error: error.message });
@@ -145,6 +153,10 @@ router.delete('/cards/:id', async (req, res) => {
     const card = await Card.findByIdAndDelete(req.params.id);
     if (!card) {
       return res.status(404).json({ message: 'Card not found' });
+    }
+    const io = req.app.get('io');
+    if (io) {
+      io.to(card.boardId.toString()).emit('card_deleted', { cardId: req.params.id, boardId: card.boardId });
     }
     res.json({ message: 'Card deleted successfully', cardId: req.params.id });
   } catch (error) {

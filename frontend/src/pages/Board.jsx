@@ -76,10 +76,60 @@ export default function Board({ boardId }) {
       fetchBoard(true); // silent fetch in background
     });
 
+    socket.on('card_created', (newCard) => {
+      const cardBoardId = typeof newCard.boardId === 'object' ? newCard.boardId._id : newCard.boardId;
+      const currentBoardId = typeof boardId === 'object' ? boardId._id : boardId;
+      if (cardBoardId === currentBoardId) {
+        setBoard((prevBoard) => {
+          if (!prevBoard) return prevBoard;
+          if (prevBoard.cards.some((c) => c._id === newCard._id)) {
+            return prevBoard;
+          }
+          return {
+            ...prevBoard,
+            cards: [...prevBoard.cards, newCard]
+          };
+        });
+      }
+    });
+
+    socket.on('card_updated', (updatedCard) => {
+      const cardBoardId = typeof updatedCard.boardId === 'object' ? updatedCard.boardId._id : updatedCard.boardId;
+      const currentBoardId = typeof boardId === 'object' ? boardId._id : boardId;
+      if (cardBoardId === currentBoardId) {
+        setBoard((prevBoard) => {
+          if (!prevBoard) return prevBoard;
+          return {
+            ...prevBoard,
+            cards: prevBoard.cards.map((c) => c._id === updatedCard._id ? updatedCard : c)
+          };
+        });
+      }
+    });
+
+    socket.on('card_deleted', (data) => {
+      const targetCardId = typeof data === 'string' ? data : (data.cardId || data._id);
+      const cardBoardId = (data && data.boardId) ? (typeof data.boardId === 'object' ? data.boardId._id : data.boardId) : null;
+      const currentBoardId = typeof boardId === 'object' ? boardId._id : boardId;
+      
+      if (!cardBoardId || cardBoardId === currentBoardId) {
+        setBoard((prevBoard) => {
+          if (!prevBoard) return prevBoard;
+          return {
+            ...prevBoard,
+            cards: prevBoard.cards.filter((c) => c._id !== targetCardId)
+          };
+        });
+      }
+    });
+
     return () => {
       socket.off('connect');
       socket.off('disconnect');
       socket.off('refresh-board');
+      socket.off('card_created');
+      socket.off('card_updated');
+      socket.off('card_deleted');
       socket.disconnect();
     };
   }, [boardId]);
