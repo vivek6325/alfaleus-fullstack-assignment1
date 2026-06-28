@@ -61,14 +61,30 @@ socketHandler(io);
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/collaborative-kanban';
 const PORT = process.env.PORT || 5000;
 
-mongoose.connect(MONGODB_URI)
-  .then(() => {
+async function startServer() {
+  let uri = MONGODB_URI;
+  try {
+    // Try connecting to the configured MONGODB_URI with a timeout of 2 seconds
+    await mongoose.connect(uri, { serverSelectionTimeoutMS: 2000 });
     console.log('Successfully connected to MongoDB.');
-    httpServer.listen(PORT, () => {
-      console.log(`Kanban Backend Server running on port ${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error('Database connection error:', err);
-    process.exit(1);
+  } catch (err) {
+    console.warn(`Could not connect to MongoDB at ${uri}. Falling back to in-memory MongoDB...`);
+    try {
+      process.env.MONGOMS_VERSION = '4.4.29';
+      const { MongoMemoryServer } = await import('mongodb-memory-server');
+      const mongoServer = await MongoMemoryServer.create();
+      uri = mongoServer.getUri();
+      await mongoose.connect(uri);
+      console.log('Successfully connected to In-Memory MongoDB.');
+    } catch (innerErr) {
+      console.error('Failed to start in-memory MongoDB fallback:', innerErr);
+      process.exit(1);
+    }
+  }
+
+  httpServer.listen(PORT, () => {
+    console.log(`Kanban Backend Server running on port ${PORT}`);
   });
+}
+
+startServer();
