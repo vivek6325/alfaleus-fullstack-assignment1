@@ -7,13 +7,38 @@ document.addEventListener('DOMContentLoaded', () => {
   const submitBtn = document.getElementById('submit-btn');
   const feedbackMsg = document.getElementById('feedback-message');
 
-  // 1. Fetch details of active browser tab
+  // 1. Fetch details of active browser tab and retrieve selection
   if (typeof chrome !== 'undefined' && chrome.tabs) {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (tabs && tabs[0]) {
         const activeTab = tabs[0];
-        document.getElementById('task-title').value = activeTab.title || '';
-        document.getElementById('task-desc').value = `Clipped from: ${activeTab.title}\nURL: ${activeTab.url}`;
+
+        // Handle restricted URLs (like chrome:// or about:)
+        if (activeTab.url && (activeTab.url.startsWith('chrome://') || activeTab.url.startsWith('about:') || activeTab.url.startsWith('edge://'))) {
+          document.getElementById('task-title').value = activeTab.title || 'Restricted Page';
+          document.getElementById('task-desc').value = `Clipped from: ${activeTab.title || 'Restricted Page'}\nURL: ${activeTab.url}`;
+          return;
+        }
+
+        // Execute script to get text selection
+        chrome.scripting.executeScript({
+          target: { tabId: activeTab.id },
+          func: () => window.getSelection().toString()
+        }, (results) => {
+          let selectedText = '';
+          if (results && results[0] && results[0].result) {
+            selectedText = results[0].result.trim();
+          }
+
+          if (selectedText) {
+            document.getElementById('task-title').value = activeTab.title || '';
+            document.getElementById('task-desc').value = `${selectedText}\n\nSource: ${activeTab.url}`;
+          } else {
+            // No selection fallback
+            document.getElementById('task-title').value = activeTab.title || '';
+            document.getElementById('task-desc').value = `Clipped from: ${activeTab.title}\nURL: ${activeTab.url}`;
+          }
+        });
       }
     });
   } else {

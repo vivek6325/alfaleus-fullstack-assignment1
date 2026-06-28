@@ -4,7 +4,8 @@
   "version": "1.0.0",
   "description": "Clip pages, highlights, and links directly to your collaborative Kanban Board.",
   "permissions": [
-    "activeTab"
+    "activeTab",
+    "scripting"
   ],
   "host_permissions": [
     "http://localhost:5000/*"
