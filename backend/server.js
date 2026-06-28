@@ -29,12 +29,12 @@ app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps, curl, or standard server-to-server)
     if (!origin) return callback(null, true);
-    
+
     // Allow extensions (chrome-extension://...) and configured frontend
     if (origin.startsWith('chrome-extension://') || allowedOrigins.indexOf(origin) !== -1 || origin === 'null') {
       return callback(null, true);
     }
-    
+
     // In dev mode, allow other origins for ease of access
     return callback(null, true);
   },
@@ -92,6 +92,8 @@ async function startServer() {
     await mongoose.connect(uri, { serverSelectionTimeoutMS: 2000 });
     console.log('Successfully connected to MongoDB.');
   } catch (err) {
+    console.error("ACTUAL MONGODB ERROR:");
+    console.error(err);
     console.warn(`Could not connect to MongoDB at ${uri}. Falling back to in-memory MongoDB...`);
     try {
       process.env.MONGOMS_VERSION = '4.4.29';
