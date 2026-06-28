@@ -4,12 +4,17 @@ import { Server } from 'socket.io';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import boardRoutes from './routes/boardRoutes.js';
 import socketHandler from './socket/socketHandler.js';
 import Board from './models/Board.js';
 import { runAIAnalysis } from './services/aiProjectManager.js';
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const httpServer = createServer(app);
@@ -45,6 +50,23 @@ app.use('/api', boardRoutes);
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'healthy', db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected' });
+});
+
+// Serve static assets if in production or if dist folder exists
+const frontendDistPath = path.join(__dirname, '../frontend/dist');
+app.use(express.static(frontendDistPath));
+
+// Fallback all non-API routes to index.html for React SPA
+app.get('*', (req, res, next) => {
+  if (
+    req.path.startsWith('/api') ||
+    req.path.startsWith('/boards') ||
+    req.path.startsWith('/cards') ||
+    req.path.startsWith('/health')
+  ) {
+    return next();
+  }
+  res.sendFile(path.join(frontendDistPath, 'index.html'));
 });
 
 // Setup Socket.io

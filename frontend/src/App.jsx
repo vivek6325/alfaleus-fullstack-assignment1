@@ -3,7 +3,7 @@ import axios from 'axios';
 import Board from './pages/Board.jsx';
 import { Kanban, Plus, RefreshCw, FolderPlus, HelpCircle } from 'lucide-react';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:5000' : window.location.origin);
 
 export default function App() {
   const [boards, setBoards] = useState([]);

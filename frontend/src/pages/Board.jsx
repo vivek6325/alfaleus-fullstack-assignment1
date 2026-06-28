@@ -7,7 +7,7 @@ import AIInsightsSidebar from '../components/AIInsightsSidebar.jsx';
 import GitHubImporterModal from '../components/GitHubImporterModal.jsx';
 import { Share2, RefreshCw, Cpu, Activity, AlertCircle, Github } from 'lucide-react';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:5000' : window.location.origin);
 
 export default function Board({ boardId }) {
   const [board, setBoard] = useState(null);
