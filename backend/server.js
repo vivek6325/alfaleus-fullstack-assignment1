@@ -38,6 +38,7 @@ app.use(express.json());
 
 // Routes
 app.use('/', boardRoutes);
+app.use('/api', boardRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

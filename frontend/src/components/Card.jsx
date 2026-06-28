@@ -1,7 +1,25 @@
 import React, { useState } from 'react';
+import { useDraggable } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 import { User, Tag, Trash2, Edit, Award, Hash, Clock } from 'lucide-react';
 
 export default function Card({ card, boardId, onCardUpdate, onCardDelete }) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: card._id,
+  });
+
+  const style = {
+    transform: transform ? CSS.Translate.toString(transform) : undefined,
+    cursor: isDragging ? 'grabbing' : 'grab',
+    opacity: isDragging ? 0.4 : undefined,
+    touchAction: 'none'
+  };
+
+  const getRiskClass = () => {
+    if (card.complexityScore > 7) return 'risk-critical';
+    if (card.complexityScore > 4) return 'risk-warning';
+    return 'risk-normal';
+  };
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(card.title);
   const [description, setDescription] = useState(card.description);
@@ -32,25 +50,14 @@ export default function Card({ card, boardId, onCardUpdate, onCardDelete }) {
     return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
-  // HTML5 Drag Event Handlers
-  const handleDragStart = (e) => {
-    e.dataTransfer.setData('text/plain', card._id);
-    e.dataTransfer.setData('sourceColumnId', card.status);
-    e.currentTarget.classList.add('dragging');
-  };
-
-  const handleDragEnd = (e) => {
-    e.currentTarget.classList.remove('dragging');
-  };
-
   return (
     <>
       <div 
-        className="glass-card p-3 mb-3 d-flex flex-column gap-2 risk-normal"
-        draggable
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-        style={{ cursor: 'grab' }}
+        ref={setNodeRef}
+        style={style}
+        {...listeners}
+        {...attributes}
+        className={`glass-card p-3 mb-3 d-flex flex-column gap-2 ${getRiskClass()} ${isDragging ? 'dragging' : ''}`}
       >
         <div className="d-flex justify-content-between align-items-start">
           <h6 className="fw-semibold mb-0 text-white text-wrap text-break pe-2">{card.title}</h6>
