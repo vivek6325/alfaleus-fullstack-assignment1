@@ -13,6 +13,9 @@ import { runAIAnalysis } from './services/aiProjectManager.js';
 
 dotenv.config();
 
+// ADDED THIS LINE
+console.log("MONGODB URI FROM ENV:", process.env.MONGODB_URI);
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
