@@ -1,16 +1,124 @@
-# React + Vite
+````markdown
+# Real-Time Collaborative Kanban with AI Project Manager
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A full-stack collaborative project management application featuring real-time Kanban boards, AI-powered project insights, GitHub issue importing, and Chrome extension task clipping.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Tech Stack
 
-## React Compiler
+- **Frontend:** React + Vite + Bootstrap
+- **Backend:** Node.js + Express
+- **Database:** MongoDB Atlas
+- **Real-Time Communication:** Socket.IO (WebSockets)
+- **Deployment:** Railway
+- **Browser Extension:** Chrome Extension (Manifest V3)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the Oxlint configuration
+## Features Implemented
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+- Real-time collaborative Kanban board
+- Drag-and-drop task movement
+- WebSocket synchronization
+- Conflict resolution using Last-Write-Wins
+- AI insights panel
+- Bottleneck detection
+- Sprint risk analysis
+- Task complexity inference
+- GitHub issue importer
+- Chrome extension for task clipping
+
+---
+
+## Architecture
+
+The application follows a client-server architecture:
+
+- Frontend communicates with the Express backend using REST APIs
+- Socket.IO handles real-time board synchronization
+- MongoDB stores boards and cards persistently
+- AI analysis runs as scheduled background jobs every 6 hours
+
+### System Flow
+
+```text
+React Frontend
+     |
+ REST APIs
+     |
+Node.js + Express Backend
+     |
+ Socket.IO
+     |
+MongoDB Atlas Database
+````
+
+---
+
+## Conflict Resolution Strategy
+
+Implemented **Last-Write-Wins (LWW)** strategy:
+
+* Latest update overwrites previous conflicting updates
+* All connected clients receive synchronized updates via WebSockets
+* Ensures consistency during simultaneous edits
+
+---
+
+## GitHub Issue Import
+
+Supported features:
+
+* Import from public repositories
+* Import open issues
+* Label mapping to Kanban columns
+* Duplicate issue prevention
+
+---
+
+## AI Methodology
+
+The AI Project Manager analyzes:
+
+* Card velocity
+* Team bottlenecks
+* Sprint completion risk
+* Task complexity estimation
+
+AI insights help teams identify blockers and improve productivity.
+
+---
+
+## Deployment
+
+### Backend Live URL
+
+https://alfaleus-fullstack-assignment1-production.up.railway.app
+
+---
+
+## Known Limitations
+
+* Final frontend production deployment is pending
+* Local MongoDB Atlas connection issue with Node.js v24 DNS SRV resolution
+
+---
+
+## Future Improvements
+
+* Complete frontend deployment
+* Improve AI recommendation accuracy
+* Add authentication and user roles
+* Support multiple Kanban boards per organization
+* Add analytics dashboard
+
+---
+
+## Author
+
+**Vivek Aripalli**
+B.Tech CSE | VIT-AP University
+
+```
+```
